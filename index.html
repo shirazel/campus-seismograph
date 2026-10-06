@@ -22,7 +22,7 @@ body{margin:0;color:var(--tx);font-family:"Segoe UI",Arial,sans-serif;line-heigh
 button,select,input[type=search]{background:#0a1220;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
 button:hover,select:hover{border-color:var(--acc);box-shadow:0 0 10px #00e5ff55}
 .tog{display:flex;gap:6px;align-items:center;font-size:13.5px;cursor:pointer}
-canvas{width:100%;height:150px;display:block;direction:ltr;margin-bottom:10px}
+canvas{width:100%;height:210px;display:block;direction:ltr;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:980px;margin:0 auto}
 .sp{width:100%;height:70px;display:block;margin-bottom:6px;direction:ltr}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -65,6 +65,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin:18px 0 6px}
   <button id="refresh">🔄</button><span id="status"></span>
 </div>
 <div class="err" id="err"></div>
+<div class="sub" style="margin:4px 0 2px"><b style="color:var(--tx)">כמה נרשמו לאורך הזמן</b> — הקו הירוק הוא הנרשמים המצטברים, והקו המקווקו הוא המשוער הכולל</div>
 <canvas id="seis"></canvas>
 <div class="grid" id="grid"></div>
 <div id="unmatchedP" style="display:none"><div class="sub">הרשמות שלא שויכו לבית ספר מדווח:</div><div id="unmatched" class="sub"></div></div>
@@ -185,7 +186,7 @@ function render(){
   if(lastCount!==null&&D.counted.length>lastCount){D.counted.filter(r=>!seenKeys.has(r.row)).forEach(r=>{const s=matchSchool(r.school,SCHOOLS);s&&pulseSet.add(s.name)});render.skip=1}
   seenKeys=new Set(D.counted.map(r=>r.row));lastCount=D.counted.length;
   if(pulseSet.size){setTimeout(()=>{pulseSet=new Set();document.querySelectorAll('.pulse').forEach(e=>e.classList.remove('pulse'))},1300)}
-  drawSeis(D.counted);
+  window.EST_TOTAL=est;drawSeis(D.counted);
 }
 function openSchool(name){
   const s=compute().by.find(x=>x.name===name);
@@ -202,28 +203,43 @@ $('#modal').onclick=e=>{if(e.target.id==='modal')e.target.classList.remove('on')
 let seisPts=[],hover=null;
 function drawSeis(rows){
   const cv=$('#seis'),dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
-  cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);
-  const css=getComputedStyle(document.documentElement),acc='#ff2bd6',mut='#6f89a6',line='#16243a',ok='#39ff88';
-  g.clearRect(0,0,W,H);
+  cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,W,H);
+  const mut='#6f89a6',est=window.EST_TOTAL||0;
   const ts=rows.map(r=>parseTs(r.ts)).filter(Boolean).sort((a,b)=>a-b);
-  if(!ts.length){g.fillStyle=mut;g.fillText('אין נתונים',W/2,H/2);return}
-  const BIN=60000,t0=Math.floor(ts[0]/BIN)*BIN,t1=Math.ceil((Math.max(ts[ts.length-1],Date.now()>ts[ts.length-1]+36e5?ts[ts.length-1]:Date.now()))/BIN)*BIN;
-  const nb=Math.max(1,(t1-t0)/BIN),bins=new Array(nb+1).fill(0);ts.forEach(t=>bins[Math.floor((t-t0)/BIN)]++);
-  const mx=Math.max(...bins),pad={l:34,r:10,t:10,b:22},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
-  g.strokeStyle=line;g.lineWidth=1;g.font='11px Arial';g.fillStyle=mut;
-  for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;g.beginPath();g.moveTo(pad.l,y);g.lineTo(W-pad.r,y);g.stroke();g.fillText(Math.round(mx*(1-i/4)),2,y+4)}
-  const x=i=>pad.l+pw*(i/(nb||1));
-  /* עמודות קצב */
-  g.shadowColor=acc;g.shadowBlur=8;g.strokeStyle=acc;g.lineWidth=Math.max(1,Math.min(4,pw/nb*.7));seisPts=[];
-  bins.forEach((v,i)=>{const X=x(i),Y=pad.t+ph*(1-v/mx);if(v){g.beginPath();g.moveTo(X,pad.t+ph);g.lineTo(X,Y);g.stroke()}seisPts.push({X,Y,v,t:t0+i*BIN})});
-  /* קו מצטבר */
-  let c=0;g.shadowColor=ok;g.shadowBlur=12;g.strokeStyle=ok;g.lineWidth=2.5;g.beginPath();
-  bins.forEach((v,i)=>{c+=v;const X=x(i),Y=pad.t+ph*(1-c/ts.length);i?g.lineTo(X,Y):g.moveTo(X,Y)});g.stroke();
-  g.shadowBlur=0;g.fillStyle=mut;for(let i=0;i<=5;i++){const t=t0+(t1-t0)*i/5;g.fillText(new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}),x(nb*i/5)-12,H-6)}
-  if(hover){const p=seisPts.reduce((a,b)=>Math.abs(b.X-hover)<Math.abs(a.X-hover)?b:a);
-    g.fillStyle='#e6f7ff';g.fillText(`${new Date(p.t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})} · ${p.v} נרשמים בדקה`,Math.min(W-170,Math.max(pad.l,p.X-60)),pad.t+10)}
+  if(!ts.length){g.fillStyle=mut;g.font='13px Arial';g.fillText('אין נתונים',W/2,H/2);return}
+  const N=ts.length,top=Math.max(est,N)*1.1,col=colorOf(est?N/est:0);
+  const pad={l:40,r:12,t:16,b:26},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const t0=ts[0],t1=Math.max(ts[N-1],t0+60000)+(ts[N-1]-t0)*0.04;
+  const X=t=>pad.l+pw*(t-t0)/(t1-t0),Y=v=>pad.t+ph*(1-v/top);
+  /* רשת וציר מספרי */
+  g.font='11px Arial';g.lineWidth=1;
+  const step=[10,20,25,50,100].find(s=>top/s<=6)||100;
+  for(let v=0;v<=top;v+=step){g.strokeStyle='#16243a';g.beginPath();g.moveTo(pad.l,Y(v));g.lineTo(W-pad.r,Y(v));g.stroke();g.fillStyle=mut;g.textAlign='right';g.fillText(v,pad.l-6,Y(v)+4)}
+  /* קו המטרה */
+  if(est){g.setLineDash([6,5]);g.strokeStyle='#ffffffaa';g.lineWidth=1.5;g.beginPath();g.moveTo(pad.l,Y(est));g.lineTo(W-pad.r,Y(est));g.stroke();g.setLineDash([]);
+    g.fillStyle='#e6f7ff';g.textAlign='left';g.font='bold 12px Arial';g.fillText('המשוער: '+est,pad.l+6,Y(est)-6)}
+  /* עקומת המצטבר */
+  g.beginPath();g.moveTo(X(t0),Y(0));let c=0;
+  ts.forEach(t=>{g.lineTo(X(t),Y(c));c++;g.lineTo(X(t),Y(c))});g.lineTo(X(t1),Y(N));
+  const line=new Path2D();
+  g.save();g.shadowColor=col;g.shadowBlur=12;g.strokeStyle=col;g.lineWidth=2.6;g.stroke();g.restore();
+  g.lineTo(X(t1),Y(0));g.closePath();const gr=g.createLinearGradient(0,pad.t,0,pad.t+ph);const al=(c,a)=>c.startsWith('hsl')?c.replace(')',' / '+a+')'):c+Math.round(a*255).toString(16).padStart(2,'0');gr.addColorStop(0,al(col,.35));gr.addColorStop(1,al(col,.02));g.fillStyle=gr;g.fill();
+  /* נקודת הסיום */
+  g.fillStyle=col;g.shadowColor=col;g.shadowBlur=14;g.beginPath();g.arc(X(t1),Y(N),5,0,7);g.fill();g.shadowBlur=0;
+  g.textAlign='right';g.font='bold 14px Arial';g.fillText(N+' נרשמים',X(t1)-10,Y(N)-10);
+  /* ציר זמן */
+  g.fillStyle=mut;g.font='11px Arial';g.textAlign='center';
+  const multi=new Date(t0).toDateString()!==new Date(t1).toDateString();
+  for(let i=0;i<=5;i++){const t=t0+(t1-t0)*i/5,d=new Date(t);
+    g.fillText(d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})+(multi?' '+d.toLocaleDateString('he-IL',{day:'numeric',month:'numeric'}):''),Math.min(W-30,Math.max(pad.l+14,X(t))),H-8)}
+  /* ריחוף: כמה נרשמו עד אותו רגע */
+  if(hover!=null){const t=t0+(t1-t0)*(hover-pad.l)/pw;if(t>=t0&&t<=t1){const n=ts.filter(x=>x<=t).length;
+    g.strokeStyle='#ffffff55';g.lineWidth=1;g.beginPath();g.moveTo(hover,pad.t);g.lineTo(hover,pad.t+ph);g.stroke();
+    const txt=n+' נרשמים עד '+new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});g.font='bold 12px Arial';
+    const w=g.measureText(txt).width+14,x=Math.min(W-w-4,Math.max(pad.l,hover-w/2));
+    g.fillStyle='#0a1220';g.strokeStyle=col;g.fillRect(x,pad.t,w,22);g.strokeRect(x,pad.t,w,22);g.fillStyle='#e6f7ff';g.textAlign='left';g.fillText(txt,x+7,pad.t+15)}}
 }
-$('#seis').onmousemove=e=>{hover=e.offsetX;render.seis&&0;drawSeis(compute().counted)};
+$('#seis').onmousemove=e=>{hover=e.offsetX;drawSeis(compute().counted)};
 $('#seis').onmouseleave=()=>{hover=null;drawSeis(compute().counted)};
 ['dedupe','course','sort'].forEach(i=>$('#'+i).onchange=render);
 $('#q').oninput=render;$('#refresh').onclick=load;
