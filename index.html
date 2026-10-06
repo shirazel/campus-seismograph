@@ -153,7 +153,7 @@ function render(){
   const P=est?reg/est:0,cc=colorOf(P);
   $('#bigring').innerHTML=ring(P,cc,50,9);$('#bigring').style.setProperty('--c',cc);
   $('#bignum').innerHTML=`<span style="color:${cc};text-shadow:0 0 14px ${cc}">${Math.round(P*100)}%</span>`;
-  $('#bigsub').innerHTML=`${reg} נרשמים מתוך ${est} משוער<br>${part}/${D.by.length} בתי ספר פעילים · <span class="dup">${D.dups.length} כפילויות</span>`;
+  $('#bigsub').innerHTML=`${reg} נרשמים מתוך ${est} משוער<br>${part}/${D.by.length} בתי ספר פעילים`;
   let list=D.by.filter(s=>!$('#q').value||norm(s.name).includes(norm($('#q').value)));
   const so=$('#sort').value;
   list.sort((a,b)=>so==='name'?a.name.localeCompare(b.name,'he'):so==='reg'?b.reg.length-a.reg.length:so==='pct'?pctOf(a)-pctOf(b):(b.est-b.reg.length)-(a.est-a.reg.length));
@@ -172,7 +172,7 @@ function render(){
       <div class="row"><div class="n">${esc(s.name)}</div>
         <div class="num" style="color:${c};text-shadow:0 0 10px ${c}">${s.reg.length}<small> / ${s.est||'?'}</small></div></div>
       <div class="gbar"><i style="width:${Math.min(100,Math.round(p*100))}%;background:${c};box-shadow:0 0 10px ${c},0 0 22px ${c}"></i></div>
-      <div class="t">${!s.est?'לא דווח משוער':`${Math.round(p*100)}% · ${d>0?`חסרים ${d}`:`+${-d} מעל המשוער`}`}${s.dup.length?` · <span class="dup">${s.dup.length} כפולים</span>`:''}</div></div>`}).join('')||'<div class="sub">אין תוצאות</div>';
+      <div class="t">${!s.est?'לא דווח משוער':`${Math.round(p*100)}% · ${d>0?`חסרים ${d}`:`+${-d} מעל המשוער`}`}</div></div>`}).join('')||'<div class="sub">אין תוצאות</div>';
   
   $('#unmatchedP').style.display=D.unm.length?'block':'none';
   const names=[...new Set(D.unm.map(r=>r.school||'(ללא שם)'))];
