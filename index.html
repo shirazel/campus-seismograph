@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ססמוגרף הרשמות · קמפוס חמ״ד</title>
+<style>
+:root{--bg:#04070d;--card:#0a1220;--line:#16243a;--tx:#e6f7ff;--mut:#6f89a6;--acc:#00e5ff}
+*{box-sizing:border-box}
+body{margin:0;color:var(--tx);font-family:"Segoe UI",Arial,sans-serif;line-height:1.4;min-height:100vh;
+ background:radial-gradient(ellipse at 50% -10%,#0d2a3f 0,transparent 55%),
+ linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 34px,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/34px 100%,var(--bg)}
+.wrap{max-width:1300px;margin:0 auto;padding:14px}
+.hero{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.title h1{margin:0;font-size:22px;letter-spacing:.5px;text-shadow:0 0 14px var(--acc)}
+.sub{color:var(--mut);font-size:12.5px}
+.big{display:flex;align-items:center;gap:16px}
+.bigring{width:132px;height:132px}
+.bignum{font-size:40px;font-weight:700;line-height:1}
+.bigsub{color:var(--mut);font-size:13px}
+.bar2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
+button,select,input[type=search]{background:#0a1220;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+button:hover,select:hover{border-color:var(--acc);box-shadow:0 0 10px #00e5ff55}
+.tog{display:flex;gap:6px;align-items:center;font-size:13.5px;cursor:pointer}
+canvas{width:100%;height:150px;display:block;direction:ltr;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:980px;margin:0 auto}
+.sp{width:100%;height:70px;display:block;margin-bottom:6px;direction:ltr}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.num{font-size:26px;font-weight:700}.num small{font-size:14px;color:var(--mut);text-shadow:none}
+.gbar{height:8px;background:#ffffff12;border-radius:6px;margin:6px 0 4px;overflow:hidden}
+.gbar i{display:block;height:100%;border-radius:6px;transition:width .6s}
+.sc{border-radius:16px;padding:10px 14px 10px;text-align:right;background:linear-gradient(#0b1626,#07101c);
+ border:1px solid var(--c);box-shadow:0 0 calc(4px + 22px*var(--g)) var(--c),inset 0 0 calc(18px*var(--g)) color-mix(in srgb,var(--c) 40%,transparent);transition:transform .15s}
+.sc:hover{transform:translateY(-3px) scale(1.03)}
+.sc.pulse{animation:pl 1.2s ease-out}
+@keyframes pl{0%{transform:scale(1.12)}100%{transform:scale(1)}}
+.ring{filter:drop-shadow(0 0 5px var(--c)) drop-shadow(0 0 12px var(--c))}
+.sc .n{font-size:16px;font-weight:600}
+.sc .t{font-size:11.5px;color:var(--mut)}
+.dup{color:#ffd24a}
+#modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:14px;z-index:9}
+#modal.on{display:flex}
+#mbox{background:#0a1220;border:1px solid var(--acc);box-shadow:0 0 30px #00e5ff55;border-radius:14px;max-width:760px;width:100%;max-height:86vh;overflow:auto;padding:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:5px 7px;border-bottom:1px solid var(--line);text-align:right}
+tr.d td{color:#ffd24a}
+#status{font-size:12px;color:var(--mut)}
+.err{background:#ff3b5c22;border:1px solid #ff3b5c;border-radius:10px;padding:10px;margin-bottom:12px;display:none}
+#unmatchedP{margin-top:14px;border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+footer{text-align:center;color:var(--mut);font-size:12px;margin:18px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hero">
+  <div class="title"><h1>ססמוגרף הרשמות · קמפוס חמ״ד</h1><div class="sub">כל גלאי = בית ספר. ככל שהנרשמים מתקרבים למשוער — הוא נדלק בירוק.</div></div>
+  <div class="big"><svg class="bigring" id="bigring" viewBox="0 0 120 120"></svg>
+   <div><div class="bignum" id="bignum">–</div><div class="bigsub" id="bigsub"></div></div></div>
+</div>
+<div class="bar2">
+  <label class="tog"><input type="checkbox" id="dedupe" checked> ת״ז ייחודית בלבד</label>
+  <select id="course"><option value="">כל הקורסים</option></select>
+  <input type="search" id="q" placeholder="חיפוש…">
+  <select id="sort"><option value="gap">הפער הגדול ראשון</option><option value="pct">הכי כבויים ראשון</option><option value="reg">הכי הרבה נרשמים</option><option value="name">שם</option></select>
+  <button id="refresh">🔄</button><span id="status"></span>
+</div>
+<div class="err" id="err"></div>
+<canvas id="seis"></canvas>
+<div class="grid" id="grid"></div>
+<div id="unmatchedP" style="display:none"><div class="sub">הרשמות שלא שויכו לבית ספר מדווח:</div><div id="unmatched" class="sub"></div></div>
+<footer>נבנה עבור שירה רוט זליקוביץ · מתעדכן כל 30 שניות</footer>
+</div>
+<div id="modal"><div id="mbox"></div></div>
+
+<script>
+const APPS_URL='PASTE_WEB_APP_URL_HERE';
+const $=s=>document.querySelector(s);
+const norm=s=>(s||'').toString().replace(/["'`״׳()]/g,'').replace(/[\-–—]/g,' ').replace(/\s+/g,' ').trim();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let n=0;
+function jsonp(url){return new Promise((res,rej)=>{
+  const cb='cb'+(n++)+'_'+Date.now();
+  const t=setTimeout(()=>{cl();rej(new Error('פסק זמן'))},25000);
+  function cl(){try{delete window[cb]}catch(e){}document.getElementById(cb)?.remove();clearTimeout(t)}
+  window[cb]=r=>{cl();res(r)};
+  const s=document.createElement('script');s.id=cb;s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+  s.onerror=()=>{cl();rej(new Error('שגיאת רשת'))};document.head.appendChild(s);})}
+
+/* matching: school name in registrations → reported school */
+const BUILTIN={'תיכון פלך':'פלך זכרון יעקב','אולפנית שחם עש חיים משה שפירא':'אולפנית שח"ם','ישיבה תנכית זכרון יעקב':'ישיבה תיכונית זכרון יעקב',
+ 'ישיבת בני עקיבא יבנה':'יב"ע עירוני \'יבנה\' - חיפה','תיכון חמד לוינסון למצוינות':'לוינסון','תיכון שש שנתי חמד דרכא אריאל':'דרכא אריאל'};
+const MANUAL=Object.assign({},Object.fromEntries(Object.entries(BUILTIN).map(([k,v])=>[norm(k),v])),JSON.parse(localStorage.getItem('seis_map')||'{}'));
+function matchSchool(name,schools){
+  const k=norm(name); if(!k) return null;
+  if(MANUAL[k]) return schools.find(s=>s.name===MANUAL[k])||null;
+  let m=schools.find(s=>norm(s.name)===k); if(m) return m;
+  const strip=x=>norm(x).replace(/^(תיכון|ישיבה|ישיבת|אולפנת|אולפנית|חמד|חמ ד|שש שנתי|שש-שנתי|ע ש .*)\s*/g,'').trim();
+  const toks=x=>norm(x).split(' ').filter(w=>w.length>2&&!/^(תיכון|ישיבה|ישיבת|אולפנת|אולפנית|חמד|חמ|שש|שנתי|ע|ש|ליד|למצוינות)$/.test(w));
+  const tk=toks(name); if(!tk.length) return null;
+  let best=null,bs=0;
+  for(const s of schools){const ts=toks(s.name);const c=tk.filter(w=>ts.includes(w)).length;
+    if(c&&c/Math.max(tk.length,ts.length)>bs){bs=c/Math.max(tk.length,ts.length);best=s}}
+  return bs>=0.5?best:null;
+}
+
+let SCHOOLS=[],REGS=[],pulseSet=new Set(),lastCount=null,seenKeys=new Set();
+async function load(){
+  $('#status').textContent='טוען…';
+  try{
+    if(APPS_URL.includes('PASTE_')) throw new Error('כתובת הנתונים טרם הוגדרה');
+    const d=await jsonp(APPS_URL);
+    SCHOOLS=d.schools;
+    REGS=d.regs.map((r,i)=>({row:i,ts:r.t,course:r.c,school:r.s,cls:'',name:'',id:'g'+r.g,canc:''}));
+    $('#err').style.display='none';
+    $('#status').textContent='עודכן '+(d.updated||'').slice(11);
+    fillCourses(); render();
+  }catch(e){
+    $('#err').style.display='block';
+    $('#err').innerHTML='<b>לא הצלחתי לטעון את הנתונים ('+esc(e.message)+').</b>';
+    $('#status').textContent='';
+  }
+}
+function parseTs(s){const m=s.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);return m?new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],+m[6]).getTime():0}
+function fillCourses(){const sel=$('#course'),cur=sel.value;
+  const cs=[...new Set(REGS.map(r=>r.course).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  sel.innerHTML='<option value="">כל הקורסים</option>'+cs.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('')}
+
+function compute(){
+  const dedupe=$('#dedupe').checked, course=$('#course').value;
+  const rows=REGS.filter(r=>!course||r.course===course);
+  const seen=new Map(), counted=[], dups=[];
+  rows.slice().sort((a,b)=>parseTs(a.ts)-parseTs(b.ts)).forEach(r=>{
+    const key=r.id;   /* בלי ת״ז תקינה — לא מאחדים */
+    if(dedupe&&seen.has(key)){dups.push({...r,first:seen.get(key)});return}
+    seen.set(key,r);counted.push(r)});
+  const by=new Map(SCHOOLS.map(s=>[s.name,{...s,reg:[],dup:[]}]));
+  const unm=[];
+  const put=(r,t)=>{const s=matchSchool(r.school,SCHOOLS);
+    if(!s){if(t==='reg')unm.push(r);return}
+    by.get(s.name)[t].push(r)};
+  counted.forEach(r=>put(r,'reg')); dups.forEach(r=>put(r,'dup'));
+  return {by:[...by.values()],counted,dups,unm,rows};
+}
+const pctOf=s=>s.est?s.reg.length/s.est:(s.reg.length?1.01:0);
+const colorOf=p=>p>1?'#00e5ff':`hsl(${Math.round(Math.min(1,Math.max(0,p))*125)} 100% ${46+Math.min(1,p)*12}%)`;
+const ring=(p,c,r,w)=>{const C=2*Math.PI*r,f=Math.min(1,Math.max(0,p));return `<circle cx="60" cy="60" r="${r}" fill="none" stroke="#ffffff14" stroke-width="${w}"/><circle class="ring" cx="60" cy="60" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${C*f} ${C}" transform="rotate(-90 60 60)" style="--c:${c}"/>`};
+
+function render(){
+  const D=compute();
+  const est=D.by.reduce((a,s)=>a+s.est,0), reg=D.counted.length;
+  const reporting=D.by.filter(s=>s.est>0);
+  const part=D.by.filter(s=>s.reg.length>0).length;
+  const P=est?reg/est:0,cc=colorOf(P);
+  $('#bigring').innerHTML=ring(P,cc,50,9);$('#bigring').style.setProperty('--c',cc);
+  $('#bignum').innerHTML=`<span style="color:${cc};text-shadow:0 0 14px ${cc}">${Math.round(P*100)}%</span>`;
+  $('#bigsub').innerHTML=`${reg} נרשמים מתוך ${est} משוער<br>${part}/${D.by.length} בתי ספר פעילים · <span class="dup">${D.dups.length} כפילויות</span>`;
+  let list=D.by.filter(s=>!$('#q').value||norm(s.name).includes(norm($('#q').value)));
+  const so=$('#sort').value;
+  list.sort((a,b)=>so==='name'?a.name.localeCompare(b.name,'he'):so==='reg'?b.reg.length-a.reg.length:so==='pct'?pctOf(a)-pctOf(b):(b.est-b.reg.length)-(a.est-a.reg.length));
+  const allT=D.counted.map(r=>parseTs(r.ts)).filter(Boolean),T0=Math.min(...allT,Date.now()),T1=Math.max(...allT,T0+1);
+  const spark=(s,c)=>{const W=600,H=70,top=Math.max(s.est,s.reg.length,1),X=t=>4+(W-8)*(t-T0)/(T1-T0),Y=v=>H-4-(H-10)*v/top;
+    const ts=s.reg.map(r=>parseTs(r.ts)).filter(Boolean).sort((a,b)=>a-b);
+    let pts=`${X(T0)},${Y(0)}`,n=0;ts.forEach(t=>{pts+=` ${X(t)},${Y(n)} ${X(t)},${Y(++n)}`});pts+=` ${X(T1)},${Y(n)}`;
+    const area=`${X(T0)},${H} ${pts} ${X(T1)},${H}`;
+    return `<svg class="sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      ${s.est?`<line x1="0" x2="${W}" y1="${Y(s.est)}" y2="${Y(s.est)}" stroke="#ffffff55" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"/>`:''}
+      <polygon points="${area}" fill="${c}" opacity=".16"/>
+      <polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.5" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 4px ${c}) drop-shadow(0 0 9px ${c})"/></svg>`};
+  $('#grid').innerHTML=list.map(s=>{const p=pctOf(s),c=colorOf(p),d=s.est-s.reg.length;
+    return `<div class="sc ${pulseSet.has(s.name)?'pulse':''}" data-n="${esc(s.name)}" style="--c:${c};--g:${Math.min(1,p)}">
+      ${spark(s,c)}
+      <div class="row"><div class="n">${esc(s.name)}</div>
+        <div class="num" style="color:${c};text-shadow:0 0 10px ${c}">${s.reg.length}<small> / ${s.est||'?'}</small></div></div>
+      <div class="gbar"><i style="width:${Math.min(100,Math.round(p*100))}%;background:${c};box-shadow:0 0 10px ${c},0 0 22px ${c}"></i></div>
+      <div class="t">${!s.est?'לא דווח משוער':`${Math.round(p*100)}% · ${d>0?`חסרים ${d}`:`+${-d} מעל המשוער`}`}${s.dup.length?` · <span class="dup">${s.dup.length} כפולים</span>`:''}</div></div>`}).join('')||'<div class="sub">אין תוצאות</div>';
+  
+  $('#unmatchedP').style.display=D.unm.length?'block':'none';
+  const names=[...new Set(D.unm.map(r=>r.school||'(ללא שם)'))];
+  $('#unmatched').innerHTML=names.map(nm=>`<div style="margin:6px 0">${esc(nm)} · ${D.unm.filter(r=>(r.school||'(ללא שם)')===nm).length} נרשמים — שייכי ל:
+    <select data-un="${esc(nm)}"><option value="">בחרי…</option>${SCHOOLS.map(s=>`<option>${esc(s.name)}</option>`).join('')}</select></div>`).join('');
+  document.querySelectorAll('[data-un]').forEach(sel=>sel.onchange=()=>{if(!sel.value)return;
+    MANUAL[norm(sel.dataset.un)]=sel.value;localStorage.setItem('seis_map',JSON.stringify(MANUAL));render()});
+  /* פעימה על בתי ספר שהתווספו להם נרשמים */
+  const key=D.counted.map(r=>r.row).join(',');pulseSet=new Set();
+  if(lastCount!==null&&D.counted.length>lastCount){D.counted.filter(r=>!seenKeys.has(r.row)).forEach(r=>{const s=matchSchool(r.school,SCHOOLS);s&&pulseSet.add(s.name)});render.skip=1}
+  seenKeys=new Set(D.counted.map(r=>r.row));lastCount=D.counted.length;
+  if(pulseSet.size){setTimeout(()=>{pulseSet=new Set();document.querySelectorAll('.pulse').forEach(e=>e.classList.remove('pulse'))},1300)}
+  drawSeis(D.counted);
+}
+function openSchool(name){
+  const s=compute().by.find(x=>x.name===name);
+  const row=(r,d)=>`<tr class="${d?'d':''}"><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.course)}</td><td>${esc(r.id)}</td><td>${esc(r.ts)}</td><td>${d?'כפילות':''}</td></tr>`;
+  $('#mbox').innerHTML=`<h2 style="margin-top:0">${esc(s.name)} <span class="sub">· ${s.reg.length} נרשמים מתוך ${s.est||'—'}</span></h2>
+   <table><tr><th>שם</th><th>כיתה</th><th>קורס</th><th>ת״ז</th><th>זמן</th><th></th></tr>
+   ${s.reg.map(r=>row(r)).join('')}${s.dup.map(r=>row(r,1)).join('')}</table>
+   <p><button onclick="document.getElementById('modal').classList.remove('on')">סגירה</button></p>`;
+  $('#modal').classList.add('on');
+}
+$('#modal').onclick=e=>{if(e.target.id==='modal')e.target.classList.remove('on')};
+
+/* ססמוגרף */
+let seisPts=[],hover=null;
+function drawSeis(rows){
+  const cv=$('#seis'),dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+  cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);
+  const css=getComputedStyle(document.documentElement),acc='#ff2bd6',mut='#6f89a6',line='#16243a',ok='#39ff88';
+  g.clearRect(0,0,W,H);
+  const ts=rows.map(r=>parseTs(r.ts)).filter(Boolean).sort((a,b)=>a-b);
+  if(!ts.length){g.fillStyle=mut;g.fillText('אין נתונים',W/2,H/2);return}
+  const BIN=60000,t0=Math.floor(ts[0]/BIN)*BIN,t1=Math.ceil((Math.max(ts[ts.length-1],Date.now()>ts[ts.length-1]+36e5?ts[ts.length-1]:Date.now()))/BIN)*BIN;
+  const nb=Math.max(1,(t1-t0)/BIN),bins=new Array(nb+1).fill(0);ts.forEach(t=>bins[Math.floor((t-t0)/BIN)]++);
+  const mx=Math.max(...bins),pad={l:34,r:10,t:10,b:22},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  g.strokeStyle=line;g.lineWidth=1;g.font='11px Arial';g.fillStyle=mut;
+  for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;g.beginPath();g.moveTo(pad.l,y);g.lineTo(W-pad.r,y);g.stroke();g.fillText(Math.round(mx*(1-i/4)),2,y+4)}
+  const x=i=>pad.l+pw*(i/(nb||1));
+  /* עמודות קצב */
+  g.shadowColor=acc;g.shadowBlur=8;g.strokeStyle=acc;g.lineWidth=Math.max(1,Math.min(4,pw/nb*.7));seisPts=[];
+  bins.forEach((v,i)=>{const X=x(i),Y=pad.t+ph*(1-v/mx);if(v){g.beginPath();g.moveTo(X,pad.t+ph);g.lineTo(X,Y);g.stroke()}seisPts.push({X,Y,v,t:t0+i*BIN})});
+  /* קו מצטבר */
+  let c=0;g.shadowColor=ok;g.shadowBlur=12;g.strokeStyle=ok;g.lineWidth=2.5;g.beginPath();
+  bins.forEach((v,i)=>{c+=v;const X=x(i),Y=pad.t+ph*(1-c/ts.length);i?g.lineTo(X,Y):g.moveTo(X,Y)});g.stroke();
+  g.shadowBlur=0;g.fillStyle=mut;for(let i=0;i<=5;i++){const t=t0+(t1-t0)*i/5;g.fillText(new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}),x(nb*i/5)-12,H-6)}
+  if(hover){const p=seisPts.reduce((a,b)=>Math.abs(b.X-hover)<Math.abs(a.X-hover)?b:a);
+    g.fillStyle='#e6f7ff';g.fillText(`${new Date(p.t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})} · ${p.v} נרשמים בדקה`,Math.min(W-170,Math.max(pad.l,p.X-60)),pad.t+10)}
+}
+$('#seis').onmousemove=e=>{hover=e.offsetX;render.seis&&0;drawSeis(compute().counted)};
+$('#seis').onmouseleave=()=>{hover=null;drawSeis(compute().counted)};
+['dedupe','course','sort'].forEach(i=>$('#'+i).onchange=render);
+$('#q').oninput=render;$('#refresh').onclick=load;
+addEventListener('resize',render);
+load();setInterval(load,30000);
+</script>
+</body>
+</html>
