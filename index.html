@@ -77,6 +77,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin:18px 0 6px}
 const APPS_URL='https://script.google.com/macros/s/AKfycbxqsAfrji1AMBevQuOlDZ3YyrGjRhgRtKY2YdqR3qdLb1UgVOQn3hv7xJk4wDbQUYXQ/exec';
 const $=s=>document.querySelector(s);
 const norm=s=>(s||'').toString().replace(/["'`״׳()]/g,'').replace(/[\-–—]/g,' ').replace(/\s+/g,' ').trim();
+const disp=n=>String(n).replace(/^יב"?ע\s*/,'ישיבת בני עקיבא ');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let n=0;
 function jsonp(url){return new Promise((res,rej)=>{
@@ -155,7 +156,7 @@ function render(){
   $('#bigring').innerHTML=ring(P,cc,50,9);$('#bigring').style.setProperty('--c',cc);
   $('#bignum').innerHTML=`<span style="color:${cc};text-shadow:0 0 14px ${cc}">${Math.round(P*100)}%</span>`;
   $('#bigsub').innerHTML=`${reg} נרשמים מתוך ${est} משוער<br>${part}/${D.by.length} בתי ספר פעילים`;
-  let list=D.by.filter(s=>!$('#q').value||norm(s.name).includes(norm($('#q').value)));
+  let list=D.by.filter(s=>!$('#q').value||(norm(s.name)+' '+norm(disp(s.name))).includes(norm($('#q').value)));
   const so=$('#sort').value;
   list.sort((a,b)=>so==='name'?a.name.localeCompare(b.name,'he'):so==='reg'?b.reg.length-a.reg.length:so==='pct'?pctOf(a)-pctOf(b):(b.est-b.reg.length)-(a.est-a.reg.length));
   const allT=D.counted.map(r=>parseTs(r.ts)).filter(Boolean),T0=Math.min(...allT,Date.now()),T1=Math.max(...allT,T0+1);
@@ -170,7 +171,7 @@ function render(){
   $('#grid').innerHTML=list.map(s=>{const p=pctOf(s),c=colorOf(p),d=s.est-s.reg.length;
     return `<div class="sc ${pulseSet.has(s.name)?'pulse':''}" data-n="${esc(s.name)}" style="--c:${c};--g:${Math.min(1,p)}">
       ${spark(s,c)}
-      <div class="row"><div class="n">${esc(s.name)}</div>
+      <div class="row"><div class="n">${esc(disp(s.name))}</div>
         <div class="num" style="color:${c};text-shadow:0 0 10px ${c}">${s.reg.length}<small> / ${s.est||'?'}</small></div></div>
       <div class="gbar"><i style="width:${Math.min(100,Math.round(p*100))}%;background:${c};box-shadow:0 0 10px ${c},0 0 22px ${c}"></i></div>
       <div class="t">${!s.est?'לא דווח משוער':`${Math.round(p*100)}% · ${d>0?`חסרים ${d}`:`+${-d} מעל המשוער`}`}</div></div>`}).join('')||'<div class="sub">אין תוצאות</div>';
@@ -191,7 +192,7 @@ function render(){
 function openSchool(name){
   const s=compute().by.find(x=>x.name===name);
   const row=(r,d)=>`<tr class="${d?'d':''}"><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.course)}</td><td>${esc(r.id)}</td><td>${esc(r.ts)}</td><td>${d?'כפילות':''}</td></tr>`;
-  $('#mbox').innerHTML=`<h2 style="margin-top:0">${esc(s.name)} <span class="sub">· ${s.reg.length} נרשמים מתוך ${s.est||'—'}</span></h2>
+  $('#mbox').innerHTML=`<h2 style="margin-top:0">${esc(disp(s.name))} <span class="sub">· ${s.reg.length} נרשמים מתוך ${s.est||'—'}</span></h2>
    <table><tr><th>שם</th><th>כיתה</th><th>קורס</th><th>ת״ז</th><th>זמן</th><th></th></tr>
    ${s.reg.map(r=>row(r)).join('')}${s.dup.map(r=>row(r,1)).join('')}</table>
    <p><button onclick="document.getElementById('modal').classList.remove('on')">סגירה</button></p>`;
