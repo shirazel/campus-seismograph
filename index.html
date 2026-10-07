@@ -88,7 +88,7 @@ function jsonp(url){return new Promise((res,rej)=>{
   s.onerror=()=>{cl();rej(new Error('שגיאת רשת'))};document.head.appendChild(s);})}
 
 /* matching: school name in registrations → reported school */
-const BUILTIN={'תיכון פלך':'פלך זכרון יעקב','אולפנית שחם עש חיים משה שפירא':'אולפנית שח"ם','ישיבה תנכית זכרון יעקב':'ישיבה תיכונית זכרון יעקב',
+const BUILTIN={'ישיבת בני עקיבא - חריש':'יבע חריש','תיכון פלך':'פלך זכרון יעקב','אולפנית שחם עש חיים משה שפירא':'אולפנית שח"ם','ישיבה תנכית זכרון יעקב':'ישיבה תיכונית זכרון יעקב',
  'ישיבת בני עקיבא יבנה':'יב"ע עירוני \'יבנה\' - חיפה','תיכון חמד לוינסון למצוינות':'לוינסון','תיכון שש שנתי חמד דרכא אריאל':'דרכא אריאל'};
 const MANUAL=Object.assign({},Object.fromEntries(Object.entries(BUILTIN).map(([k,v])=>[norm(k),v])),JSON.parse(localStorage.getItem('seis_map')||'{}'));
 function matchSchool(name,schools){
