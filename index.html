@@ -61,7 +61,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin:18px 0 6px}
   <label class="tog"><input type="checkbox" id="dedupe" checked> ת״ז ייחודית בלבד</label>
   <select id="course"><option value="">כל הקורסים</option></select>
   <input type="search" id="q" placeholder="חיפוש…">
-  <select id="sort"><option value="gap">הפער הגדול ראשון</option><option value="pct">הכי כבויים ראשון</option><option value="reg">הכי הרבה נרשמים</option><option value="name">שם</option></select>
+  <select id="sort"><option value="best">מהטובים ולמטה</option><option value="gap">הפער הגדול ראשון</option><option value="pct">הכי כבויים ראשון</option><option value="reg">הכי הרבה נרשמים</option><option value="name">שם</option></select>
   <button id="refresh">🔄</button><span id="status"></span>
 </div>
 <div class="err" id="err"></div>
@@ -159,7 +159,7 @@ function render(){
   $('#bigsub').innerHTML=`${reg} נרשמים מתוך ${est} משוער<br>${part}/${D.by.length} בתי ספר פעילים`;
   let list=D.by.filter(s=>!$('#q').value||(norm(s.name)+' '+norm(disp(s.name))).includes(norm($('#q').value)));
   const so=$('#sort').value;
-  list.sort((a,b)=>so==='name'?a.name.localeCompare(b.name,'he'):so==='reg'?b.reg.length-a.reg.length:so==='pct'?pctOf(a)-pctOf(b):(b.est-b.reg.length)-(a.est-a.reg.length));
+  list.sort((a,b)=>so==='best'?(pctOf(b)-pctOf(a)||b.reg.length-a.reg.length):so==='name'?a.name.localeCompare(b.name,'he'):so==='reg'?b.reg.length-a.reg.length:so==='pct'?pctOf(a)-pctOf(b):(b.est-b.reg.length)-(a.est-a.reg.length));
   const allT=D.counted.map(r=>parseTs(r.ts)).filter(Boolean),T0=Math.min(...allT,Date.now()),T1=Math.max(...allT,T0+1);
   const spark=(s,c)=>{const W=600,H=70,top=Math.max(s.est,s.reg.length,1),X=t=>4+(W-8)*(t-T0)/(T1-T0),Y=v=>H-4-(H-10)*v/top;
     const ts=s.reg.map(r=>parseTs(r.ts)).filter(Boolean).sort((a,b)=>a-b);
