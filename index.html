@@ -111,7 +111,7 @@ async function load(){
     if(APPS_URL.includes('PASTE_')) throw new Error('כתובת הנתונים טרם הוגדרה');
     const d=await jsonp(APPS_URL);
     SCHOOLS=d.schools;
-    REGS=d.regs.map((r,i)=>({row:i,ts:r.t,course:r.c,school:r.s,cls:'',name:'',id:'g'+r.g,canc:''}));
+    REGS=d.regs.filter(r=>r.c).map((r,i)=>({row:i,ts:r.t,course:r.c,school:r.s,cls:'',name:'',id:'g'+r.g,canc:''}));
     $('#err').style.display='none';
     $('#status').textContent='עודכן '+(d.updated||'').slice(11);
     fillCourses(); render();
